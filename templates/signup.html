@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up - AI Task Manager</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+<style>
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #020617;
+    --bg-tertiary: #1e293b;
+    --text-primary: white;
+    --text-secondary: #94a3b8;
+    --accent: #22c55e;
+    --accent-dark: #16a34a;
+    --border: #1e293b;
+}
+body.light-mode {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e2e8f0;
+    --text-primary: #020617;
+    --text-secondary: #64748b;
+    --accent: #16a34a;
+    --accent-dark: #22c55e;
+    --border: #cbd5e1;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    padding: 20px;
+}
+.container {
+    width: 100%;
+    max-width: 420px;
+    animation: slideIn 0.5s ease;
+}
+.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 10px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+}
+.theme-toggle:hover {
+    background: var(--accent);
+    color: var(--bg-secondary);
+    transform: rotate(20deg);
+}
+.card {
+    background: var(--bg-secondary);
+    padding: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+.card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 15px 50px rgba(34, 197, 94, 0.15);
+}
+.header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+.header h1 {
+    font-size: 28px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-weight: 700;
+    transition: color 0.3s ease;
+}
+.header p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+.form-group {
+    margin-bottom: 18px;
+    animation: fadeIn 0.6s ease;
+}
+.form-group label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.input-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--accent);
+    font-size: 18px;
+    pointer-events: none;
+    transition: color 0.3s ease;
+}
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px 12px 12px 40px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--bg-secondary);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+.btn-signup {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: var(--bg-secondary);
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    animation: fadeIn 0.7s ease;
+}
+.btn-signup:hover {
+    background: var(--accent-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+}
+.btn-signup:active {
+    transform: translateY(0);
+}
+.password-info {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-top: 6px;
+    margin-left: 2px;
+    line-height: 1.4;
+}
+.footer {
+    text-align: center;
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid var(--border);
+    transition: border-color 0.3s ease;
+}
+.footer p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+.footer a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.footer a:hover {
+    color: var(--accent-dark);
+    text-decoration: underline;
+}
+.error-msg {
+    background: #fca5a5;
+    color: #7f1d1d;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 13px;
+    display: none;
+    animation: slideIn 0.3s ease;
+    border: 1px solid #f87171;
+}
+.success-msg {
+    background: #86efac;
+    color: #166534;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 13px;
+    display: none;
+    animation: slideIn 0.3s ease;
+    border: 1px solid #4ade80;
+}
+@keyframes slideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (max-width: 480px) {
+    .card { 
+        padding: 30px; 
+        border-radius: 10px;
+    }
+    .header h1 { 
+        font-size: 24px; 
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        padding: 11px 11px 11px 38px;
+        font-size: 16px;
+    }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+
+<div class="container">
+    <div class="card">
+        <div class="header">
+            <h1>🚀 Sign Up</h1>
+            <p>Create your AI Task Manager account</p>
+        </div>
+
+        <div id="errorMsg" class="error-msg"></div>
+        <div id="successMsg" class="success-msg"></div>
+
+        <form onsubmit="return signup(event)">
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="name" placeholder="John Doe" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">📧</span>
+                    <input type="email" id="email" placeholder="you@example.com" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">🔐</span>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <div class="password-info">💡 Use at least 6 characters for security</div>
+            </div>
+
+            <button type="submit" class="btn-signup">Create Account</button>
+        </form>
+
+        <div class="footer">
+            <p>Already have an account? <a href="login.html">Login here</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ----- Theme Toggle ----- */
+function toggleTheme() {
+    const body = document.body;
+    if (body.classList.contains('light-mode')) {
+        body.classList.remove('light-mode');
+        localStorage.setItem('theme', 'dark');
+        document.querySelector('.theme-toggle').textContent = '🌙';
+    } else {
+        body.classList.add('light-mode');
+        localStorage.setItem('theme', 'light');
+        document.querySelector('.theme-toggle').textContent = '☀️';
+    }
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        document.querySelector('.theme-toggle').textContent = '☀️';
+    } else {
+        document.body.classList.remove('light-mode');
+        document.querySelector('.theme-toggle').textContent = '🌙';
+    }
+}
+
+initTheme();
+
+/* ----- Signup Function ----- */
+function signup(event) {
+    event.preventDefault();
+    
+    const errorEl = document.getElementById('errorMsg');
+    const successEl = document.getElementById('successMsg');
+    
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+    
+    const nameVal = document.getElementById('name').value.trim();
+    const emailVal = document.getElementById('email').value.trim();
+    const passVal = document.getElementById('password').value;
+    
+    if (!nameVal || !emailVal || !passVal) {
+        errorEl.textContent = '⚠️ All fields are required';
+        errorEl.style.display = 'block';
+        return false;
+    }
+    
+    if (passVal.length < 6) {
+        errorEl.textContent = '⚠️ Password must be at least 6 characters';
+        errorEl.style.display = 'block';
+        return false;
+    }
+    
+    const btn = document.querySelector('.btn-signup');
+    btn.disabled = true;
+    btn.textContent = 'Creating Account...';
+
+    fetch("http://127.0.0.1:5000/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+            name: nameVal,
+            email: emailVal,
+            password: passVal
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            successEl.textContent = '✅ Account created! Redirecting to login...';
+            successEl.style.display = 'block';
+            setTimeout(() => {
+                window.location.href = "login.html";
+            }, 1000);
+        } else {
+            errorEl.textContent = '❌ ' + (data.error || 'Registration failed');
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+        }
+    })
+    .catch(err => {
+        errorEl.textContent = '❌ Server error. Please try again.';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+    });
+    
+    return false;
+}
+</script>
+
+</body>
+</html>

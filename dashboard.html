@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Task Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+    margin: 0;
+    font-family: Inter, Arial;
+    background: #0f172a;
+    color: white;
+    display: flex;
+}
+.sidebar {
+    width: 240px;
+    background: #020617;
+    height: 100vh;
+    padding: 20px;
+}
+.sidebar h2 {
+    color: #22c55e;
+}
+.sidebar p {
+    color: #94a3b8;
+    margin: 20px 0;
+    cursor:pointer;
+}
+.main {
+    flex: 1;
+    padding: 30px;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.voice-box {
+    background: #020617;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+textarea {
+    width: 100%;
+    height: 80px;
+    background: #020617;
+    border: 1px solid #1e293b;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+}
+button {
+    padding: 10px 16px;
+    background: #22c55e;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+.task-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 30px;
+}
+.task {
+    background: #020617;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #1e293b;
+}
+.task small {
+    color: #94a3b8;
+}
+.delete {
+    background: #ef4444;
+    margin-top: 10px;
+}
+.logout {
+    background:#ef4444;
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>AI Task</h2>
+    <p>📋 My Tasks</p>
+    <p>🎤 Voice Input</p>
+    <p>⚙ Settings</p>
+    <p onclick="logout()">🚪 Logout</p>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <h1 id="welcome">Welcome</h1>
+        <p>AI Powered Task Manager</p>
+    </div>
+
+    <div class="voice-box">
+        <h3>🎤 Speak your task</h3>
+        <textarea id="output"></textarea><br>
+        <button onclick="start()">Start</button>
+        <button onclick="stop()">Stop</button>
+        <button onclick="send()">Add Task</button>
+    </div>
+
+    <div class="task-grid" id="tasks"></div>
+</div>
+
+<script>
+/* ----- check login ----- */
+fetch("http://127.0.0.1:5000/me",{credentials:"include"})
+.then(res=>res.json())
+.then(d=>{
+    if(!d.logged_in){
+        window.location="login.html";
+    } else {
+        document.getElementById("welcome").innerText = "Welcome, " + d.name + " 👋";
+    }
+});
+
+/* ----- voice ----- */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+recognition.continuous = true;
+recognition.lang = "en-IN";
+
+function start(){ recognition.abort(); recognition.start(); }
+function stop(){ recognition.stop(); }
+
+recognition.onresult = e => {
+    let t="";
+    for(let i=0;i<e.results.length;i++){
+        t+=e.results[i][0].transcript;
+    }
+    document.getElementById("output").value = t;
+};
+
+/* ----- send to AI ----- */
+function send(){
+    fetch("http://127.0.0.1:5000/ai",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        credentials:"include",
+        body:JSON.stringify({ text: document.getElementById("output").value })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error){
+            alert(data.error);   // 🔥 YOU WILL SEE THE REAL ERROR
+            return;
+        }
+        document.getElementById("output").value = "";
+        loadTasks();
+    })
+    .catch(err => {
+        alert("Server error");
+    });
+}
+
+
+/* ----- load tasks ----- */
+function loadTasks(){
+    fetch("http://127.0.0.1:5000/tasks",{credentials:"include"})
+    .then(r=>r.json())
+    .then(data=>{
+        let html="";
+        data.forEach(t=>{
+           let color = "#22c55e";   // green = low
+if(t.priority === "High") color = "#ef4444";
+if(t.priority === "Medium") color = "#facc15";
+
+html += `
+<div class="task">
+    <b>${t.task}</b><br>
+    <small>${t.date} ${t.time}</small><br>
+
+    <select onchange="updatePriority(${t.id}, this.value)"
+        style="margin-top:8px; padding:6px; background:#020617; color:white; border:1px solid ${color}">
+        <option value="High" ${t.priority=="High"?"selected":""}>High</option>
+        <option value="Medium" ${t.priority=="Medium"?"selected":""}>Medium</option>
+        <option value="Low" ${t.priority=="Low"?"selected":""}>Low</option>
+    </select>
+
+    <span style="margin-left:10px; color:${color}; font-weight:bold;">
+        ${t.priority}
+    </span>
+
+    <br>
+    <button class="delete" onclick="del(${t.id})">Delete</button>
+</div>
+`;
+
+        });
+        tasks.innerHTML=html;
+    });
+}
+
+/* ----- delete ----- */
+function del(id){
+    fetch("http://127.0.0.1:5000/delete/"+id,{
+        method:"DELETE",
+        credentials:"include"
+    }).then(()=>loadTasks());
+}
+function updatePriority(id, p){
+    fetch("http://127.0.0.1:5000/update_priority/" + id,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        credentials:"include",
+        body:JSON.stringify({priority:p})
+    }).then(()=>loadTasks());
+}
+
+/* ----- logout ----- */
+function logout(){
+    fetch("http://127.0.0.1:5000/logout",{credentials:"include"})
+    .then(()=>window.location="login.html");
+}
+
+loadTasks();
+</script>
+
+</body>
+</html>

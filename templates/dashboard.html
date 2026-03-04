@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Task Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #020617;
+    --bg-tertiary: #1e293b;
+    --text-primary: white;
+    --text-secondary: #94a3b8;
+    --accent: #22c55e;
+    --accent-dark: #16a34a;
+    --danger: #ef4444;
+    --border: #1e293b;
+    --blue: #1e40af;
+    --blue-light: #3b82f6;
+}
+body.light-mode {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e2e8f0;
+    --text-primary: #020617;
+    --text-secondary: #64748b;
+    --accent: #16a34a;
+    --accent-dark: #22c55e;
+    --danger: #dc2626;
+    --border: #cbd5e1;
+    --blue: #0c4a6e;
+    --blue-light: #0ea5e9;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    display: flex;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.sidebar {
+    width: 240px;
+    background: var(--bg-secondary);
+    height: 100vh;
+    padding: 20px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    transition: background-color 0.3s ease;
+}
+.sidebar h2 {
+    color: var(--accent);
+    margin-bottom: 30px;
+    transition: color 0.3s ease;
+}
+.sidebar-item {
+    color: var(--text-secondary);
+    padding: 12px;
+    margin: 8px 0;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+.sidebar-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--accent);
+}
+.main {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    max-height: 100vh;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.theme-toggle {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 10px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    margin-left: 10px;
+}
+.theme-toggle:hover {
+    background: var(--accent);
+    color: var(--bg-secondary);
+}
+.profile-menu {
+    position: relative;
+    display: flex;
+    gap: 10px;
+}
+.profile-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+.profile-btn:hover {
+    background: var(--accent);
+    color: var(--bg-secondary);
+}
+.dropdown {
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 160px;
+    z-index: 100;
+}
+.dropdown.active { display: block; }
+.dropdown-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+}
+.dropdown-item:hover { background: var(--bg-tertiary); }
+.dropdown-item:last-child { border-bottom: none; }
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+.stat-card {
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+    transition: all 0.3s ease;
+}
+.stat-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.1);
+}
+.stat-card h3 { color: var(--accent); font-size: 28px; transition: color 0.3s ease; }
+.stat-card p { color: var(--text-secondary); font-size: 12px; margin-top: 8px; transition: color 0.3s ease; }
+.voice-box {
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+.filter-bar {
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+}
+.filter-controls {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: end;
+}
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.filter-group label {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.search-input {
+    padding: 10px 12px 10px 38px !important;
+    margin: 0 !important;
+}
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 16px;
+    pointer-events: none;
+}
+.filter-select {
+    margin: 0 !important;
+}
+@media (max-width: 800px) {
+    .filter-controls {
+        grid-template-columns: 1fr;
+    }
+}
+input[type="text"],
+input[type="datetime-local"],
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+input[type="text"]:focus,
+input[type="datetime-local"]:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
+}
+button {
+    padding: 10px 16px;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--bg-secondary);
+    font-weight: 600;
+    transition: all 0.2s;
+    margin-right: 8px;
+}
+button:hover { background: var(--accent-dark); transform: translateY(-2px); }
+button.danger { background: var(--danger); color: white; }
+button.danger:hover { background: #dc2626; }
+button.secondary { background: var(--bg-tertiary); color: var(--accent); border: 1px solid var(--accent); }
+button.secondary:hover { background: var(--accent); color: var(--bg-secondary); }
+.tasks-section {
+    margin-top: 30px;
+}
+.tasks-section h3 {
+    color: var(--accent);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+    transition: color 0.3s ease;
+}
+.task-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+.task {
+    background: var(--bg-secondary);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    animation: fadeIn 0.3s ease;
+    transition: all 0.2s;
+}
+.task:hover { border-color: var(--accent); box-shadow: 0 0 10px rgba(34, 197, 94, 0.1); }
+.task.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+.task-header {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+.task-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin-top: 2px;
+    accent-color: var(--accent);
+}
+.task-content { flex: 1; }
+.task-content b { display: block; margin-bottom: 5px; color: var(--text-primary); }
+.task-datetime { color: var(--text-secondary); font-size: 12px; margin: 5px 0; }
+.task-priority {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 8px 0;
+}
+.priority-high { background: var(--danger); color: white; }
+.priority-medium { background: #facc15; color: #020617; }
+.priority-low { background: var(--accent); color: var(--bg-secondary); }
+.task-category {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 8px 4px 8px 0;
+}
+.category-work { background: #3b82f6; color: white; }
+.category-personal { background: #a855f7; color: white; }
+.category-study { background: #f97316; color: white; }
+.category-health { background: #10b981; color: white; }
+.task-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.task-actions button { padding: 6px 12px; font-size: 12px; margin: 0; }
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 200;
+    justify-content: center;
+    align-items: center;
+}
+.modal.active { display: flex; }
+.modal-content {
+    background: var(--bg-secondary);
+    padding: 30px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    min-width: 400px;
+    max-width: 500px;
+    transition: all 0.3s ease;
+}
+.modal-content h3 { margin-bottom: 20px; color: var(--accent); }
+.modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; }
+.empty {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px 20px;
+}
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.chart-container {
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    position: relative;
+    height: 320px;
+    animation: fadeIn 0.5s ease;
+    transition: all 0.3s ease;
+}
+#reminderAlert {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--danger);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 500;
+    max-width: 350px;
+    animation: slideIn 0.3s ease;
+}
+.toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.toast {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 16px 20px;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    min-width: 280px;
+    max-width: 350px;
+    animation: slideInRight 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+}
+.toast:hover {
+    transform: translateX(-5px);
+}
+.toast.success {
+    border-left-color: var(--accent);
+}
+.toast.error {
+    border-left-color: var(--danger);
+}
+.toast.info {
+    border-left-color: #3b82f6;
+}
+.toast-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.4;
+}
+.toast-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+.toast-close:hover {
+    color: var(--text-primary);
+}
+@keyframes slideInRight {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(400px); opacity: 0; }
+}
+@keyframes slideIn {
+    from { transform: translateX(400px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>🤖 AI Task</h2>
+    <div class="sidebar-item" onclick="scrollToSection('add-task')">📝 Add Task</div>
+    <div class="sidebar-item" onclick="scrollToSection('pending')">📋 Pending</div>
+    <div class="sidebar-item" onclick="scrollToSection('completed')">✅ Completed</div>
+    <div class="sidebar-item" onclick="generateSummary()">📊 Summary</div>
+    <div class="sidebar-item" onclick="scrollToSection('analytics')">📈 Analytics</div>
+    <div class="sidebar-item" onclick="openProfileSettings()">⚙️ Profile Settings</div>
+    <hr style="border: none; border-top: 1px solid #1e293b; margin: 20px 0;">
+    <div class="sidebar-item" onclick="toggleProfileMenu()">👤 Profile</div>
+    <div class="profile-menu" style="margin-left: -12px;">
+        <div class="dropdown" id="profileDropdown">
+            <div class="dropdown-item" onclick="openChangePassword()">🔐 Change Password</div>
+            <div class="dropdown-item" onclick="logout()">🚪 Logout</div>
+        </div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <div>
+            <h1 id="welcome">Welcome</h1>
+            <p style="color: var(--text-secondary); margin: 5px 0;">AI Powered Task Manager</p>
+        </div>
+        <div class="profile-menu">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+            <button class="profile-btn" onclick="toggleProfileMenu()" style="padding: 2px;">
+                <img id="topbarAvatar" src="" alt="Profile" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; display: block;">
+            </button>
+        </div>
+    </div>
+
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <h3 id="totalTasks">0</h3>
+            <p>Total Tasks</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="highPriority">0</h3>
+            <p>High Priority</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="completedCount">0</h3>
+            <p>Completed</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="streakCount">🔥 0</h3>
+            <p>Day Streak</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="productivityScore">0%</h3>
+            <p>Productivity</p>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <h3 style="margin-bottom: 15px; color: var(--accent);">🔍 Search & Filter</h3>
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label for="searchTask">Search Tasks</label>
+                <div style="position: relative;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchTask" class="search-input" placeholder="Search by task name..." oninput="applyFilters()">
+                </div>
+            </div>
+            <div class="filter-group">
+                <label for="filterPriority">Priority</label>
+                <select id="filterPriority" class="filter-select" onchange="applyFilters()">
+                    <option value="all">All Priorities</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterStatus">Status</label>
+                <select id="filterStatus" class="filter-select" onchange="applyFilters()">
+                    <option value="all">All Tasks</option>
+                    <option value="pending">Pending Only</option>
+                    <option value="completed">Completed Only</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterCategory">Category</label>
+                <select id="filterCategory" class="filter-select" onchange="applyFilters()">
+                    <option value="all">All Categories</option>
+                    <option value="Work">🏫 Work</option>
+                    <option value="Personal">👤 Personal</option>
+                    <option value="Study">📚 Study</option>
+                    <option value="Health">💪 Health</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="sortBy">Sort By</label>
+                <select id="sortBy" class="filter-select" onchange="applyFilters()">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="priority">Priority (High→Low)</option>
+                    <option value="dueDate">Due Date</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Feature Info Card -->
+        <div style="margin-top: 15px; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border-left: 4px solid var(--accent);">
+            <details>
+                <summary style="cursor: pointer; font-weight: bold; color: var(--accent); user-select: none;">
+                    💡 Features Guide
+                </summary>
+                <div style="margin-top: 10px; font-size: 14px; line-height: 1.6; color: var(--text-secondary);">
+                    <p><strong>🔔 Reminders:</strong> Browser notifications alert you 15 min before tasks.</p>
+                    <p><strong>📧 Email Alerts:</strong> Configure SMTP in app.py for 1-hour email reminders.</p>
+                    <p><strong>🔥 Streak:</strong> Complete tasks daily to build your productivity streak!</p>
+                    <p><strong>📊 Productivity:</strong> Score = (Completed ÷ Total) × 100%</p>
+                    <p><strong>🎨 Categories:</strong> Tasks auto-categorized by AI (Work/Personal/Study/Health)</p>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <div id="add-task" class="voice-box">
+        <h3>🎤 Speak or Type Your Task</h3>
+        <input type="text" id="output" placeholder="Type task or click Start to speak...">
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button onclick="start()">🎤 Start</button>
+            <button onclick="stop()" class="secondary">⏹ Stop</button>
+            <button onclick="send()">➕ Add Task</button>
+        </div>
+    </div>
+
+    <div id="pending" class="tasks-section">
+        <h3>📋 Pending Tasks</h3>
+        <div class="task-grid" id="pendingTasks"></div>
+    </div>
+
+    <div id="completed" class="tasks-section">
+        <h3>✅ Completed Tasks</h3>
+        <div class="task-grid" id="completedTasks"></div>
+    </div>
+
+    <div id="analytics" class="tasks-section">
+        <h3>📈 Analytics & Insights</h3>
+        <div class="analytics-grid">
+            <div class="chart-container">
+                <canvas id="priorityChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeEditModal()">✕</button>
+        <h3>Edit Task</h3>
+        <input type="text" id="editTask" placeholder="Task title">
+        <input type="datetime-local" id="editDateTime">
+        <select id="editPriority">
+            <option value="High">High Priority</option>
+            <option value="Medium">Medium Priority</option>
+            <option value="Low">Low Priority</option>
+        </select>
+        <select id="editCategory">
+            <option value="Work">🏢 Work</option>
+            <option value="Personal">👤 Personal</option>
+            <option value="Study">📚 Study</option>
+            <option value="Health">💪 Health</option>
+        </select>
+        <div style="margin-top: 20px;">
+            <button onclick="saveEdit()">Save Changes</button>
+            <button class="secondary" onclick="closeEditModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="changePasswordModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeChangePassword()">✕</button>
+        <h3>Change Password</h3>
+        <input type="password" id="oldPassword" placeholder="Old password">
+        <input type="password" id="newPassword" placeholder="New password">
+        <input type="password" id="confirmPassword" placeholder="Confirm password">
+        <div style="margin-top: 20px;">
+            <button onclick="saveNewPassword()">Change Password</button>
+            <button class="secondary" onclick="closeChangePassword()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Settings Modal -->
+<div class="modal" id="profileSettingsModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeProfileSettings()">✕</button>
+        <h3>⚙️ Profile Settings</h3>
+        <div id="profilePreview" style="text-align: center; margin-bottom: 20px;">
+            <img id="avatarPreview" src="" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); background: var(--bg-secondary);">
+        </div>
+        <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 14px;">Name</label>
+        <input type="text" id="settingsName" placeholder="Your name" style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 14px;">Email (read-only)</label>
+        <input type="email" id="settingsEmail" placeholder="Email" readonly style="margin-bottom: 15px; background: var(--bg-secondary); cursor: not-allowed;">
+        <label style="display: block; margin-bottom: 5px; color: var(--text-secondary); font-size: 14px;">Profile Picture URL</label>
+        <input type="text" id="settingsProfilePicture" placeholder="https://i.imgur.com/example.jpg" oninput="updateAvatarPreview()">
+        <div style="margin-top: 20px;">
+            <button onclick="saveProfileSettings()">💾 Save Changes</button>
+            <button class="secondary" onclick="closeProfileSettings()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="reminderAlert" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <b style="font-size: 16px;">🔔 Task Reminder</b>
+            <p id="reminderText" style="margin-top: 5px; color: #f0f0f0; font-size: 14px;"></p>
+        </div>
+        <button onclick="closeReminder()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 0; margin: 0;">✕</button>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+let currentEditId = null;
+let allTasks = [];
+let userName = "";
+let priorityChart = null;
+let statusChart = null;
+let reminderChecked = {};
+
+/* ----- theme toggle ----- */
+function toggleTheme() {
+    const body = document.body;
+    const isDarkMode = body.classList.contains('light-mode') === false;
+    
+    if (isDarkMode) {
+        body.classList.add('light-mode');
+        localStorage.setItem('theme', 'light');
+        document.querySelector('.theme-toggle').textContent = '☀️';
+    } else {
+        body.classList.remove('light-mode');
+        localStorage.setItem('theme', 'dark');
+        document.querySelector('.theme-toggle').textContent = '🌙';
+    }
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        document.querySelector('.theme-toggle').textContent = '☀️';
+    } else {
+        document.body.classList.remove('light-mode');
+        document.querySelector('.theme-toggle').textContent = '🌙';
+    }
+}
+
+initTheme();
+
+/* ----- Toast Notifications ----- */
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: '✅',
+        error: '❌',
+        info: 'ℹ️'
+    };
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.success}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" onclick="removeToast(this.parentElement)">✕</button>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        removeToast(toast);
+    }, 4000);
+}
+
+function removeToast(toast) {
+    toast.style.animation = 'slideOutRight 0.3s ease';
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.parentElement.removeChild(toast);
+        }
+    }, 300);
+}
+
+/* ----- check login ----- */
+function updateUserInfo() {
+    fetch("http://127.0.0.1:5000/me", {credentials: "include"})
+    .then(res => res.json())
+    .then(d => {
+        if(!d.logged_in){
+            window.location = "login.html";
+        } else {
+            userName = d.name;
+            document.getElementById("welcome").innerText = "Welcome, " + d.name + " 👋";
+            
+            // Update avatar
+            const avatarUrl = d.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(d.name)}&background=16a34a&color=fff`;
+            document.getElementById("topbarAvatar").src = avatarUrl;
+        }
+    });
+}
+
+updateUserInfo(); // Initial load
+
+/* ----- voice ----- */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+recognition.continuous = true;
+recognition.interimResults = true;
+recognition.lang = "en-US";
+let finalTranscript = "";
+
+function start(){ 
+    finalTranscript = "";
+    document.getElementById("output").value = "";
+    document.getElementById("output").placeholder = "🎤 Listening...";
+    recognition.start(); 
+}
+function stop(){ recognition.stop(); }
+
+recognition.onresult = (event) => {
+    let interimTranscript = "";
+    for(let i = event.resultIndex; i < event.results.length; i++){
+        const transcript = event.results[i][0].transcript;
+        if(event.results[i].isFinal){
+            finalTranscript += transcript + " ";
+        } else {
+            interimTranscript += transcript;
+        }
+    }
+    document.getElementById("output").value = finalTranscript + interimTranscript;
+};
+recognition.onerror = (event) => showToast("Microphone error: " + event.error, 'error');
+recognition.onend = () => document.getElementById("output").placeholder = "";
+
+/* ----- send to AI ----- */
+function send(){
+    const text = document.getElementById("output").value.trim();
+    if(!text){
+        showToast("Please enter or speak a task", 'error');
+        return;
+    }
+    fetch("http://127.0.0.1:5000/ai",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        credentials:"include",
+        body:JSON.stringify({ text: text })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error){
+            showToast(data.error, 'error');
+            return;
+        }
+        showToast("✅ Task added: " + data.result.task, 'success');
+        showNotification("Task added: " + data.result.task);
+        document.getElementById("output").value = "";
+        loadTasks();
+    })
+    .catch(err => showToast("Server error", 'error'));
+}
+
+/* ----- load tasks ----- */
+function loadTasks(){
+    fetch("http://127.0.0.1:5000/tasks",{credentials:"include"})
+    .then(r=>r.json())
+    .then(data=>{
+        allTasks = data;
+        updateStats();
+        initCharts();
+        applyFilters();
+    });
+}
+
+/* ----- Filter and Sort Functions ----- */
+function applyFilters() {
+    const searchTerm = document.getElementById("searchTask").value.toLowerCase();
+    const priorityFilter = document.getElementById("filterPriority").value;
+    const statusFilter = document.getElementById("filterStatus").value;
+    const categoryFilter = document.getElementById("filterCategory").value;
+    const sortBy = document.getElementById("sortBy").value;
+    
+    let filtered = [...allTasks];
+    
+    // Apply search filter
+    if (searchTerm) {
+        filtered = filtered.filter(t => t.task.toLowerCase().includes(searchTerm));
+    }
+    
+    // Apply priority filter
+    if (priorityFilter !== 'all') {
+        filtered = filtered.filter(t => t.priority === priorityFilter);
+    }
+    
+    // Apply status filter
+    if (statusFilter === 'pending') {
+        filtered = filtered.filter(t => !t.completed);
+    } else if (statusFilter === 'completed') {
+        filtered = filtered.filter(t => t.completed);
+    }
+    
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+        filtered = filtered.filter(t => (t.category || 'Personal') === categoryFilter);
+    }
+    
+    // Apply sorting
+    filtered = sortTasks(filtered, sortBy);
+    
+    // Split into pending and completed
+    let pending = filtered.filter(t => !t.completed);
+    let completed = filtered.filter(t => t.completed);
+    
+    let pendingHtml = renderTasks(pending);
+    let completedHtml = renderTasks(completed);
+    
+    document.getElementById("pendingTasks").innerHTML = pendingHtml || '<p class="empty">No pending tasks found</p>';
+    document.getElementById("completedTasks").innerHTML = completedHtml || '<p class="empty">No completed tasks found</p>';
+}
+
+function sortTasks(tasks, sortBy) {
+    const sorted = [...tasks];
+    
+    switch(sortBy) {
+        case 'newest':
+            return sorted.reverse(); // Assuming tasks come in oldest-first order
+        case 'oldest':
+            return sorted;
+        case 'priority':
+            const priorityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
+            return sorted.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+        case 'dueDate':
+            return sorted.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date + ' ' + (a.time || '00:00')) : new Date('9999-12-31');
+                const dateB = b.date ? new Date(b.date + ' ' + (b.time || '00:00')) : new Date('9999-12-31');
+                return dateA - dateB;
+            });
+        default:
+            return sorted;
+    }
+}
+
+function renderTasks(tasks){
+    return tasks.map(t => `
+        <div class="task ${t.completed ? 'completed' : ''}">
+            <div class="task-header">
+                <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id})">
+                <div class="task-content">
+                    <b>${t.task}</b>
+                    <div class="task-datetime">📅 ${t.date || 'No date'} ${t.time || ''}</div>
+                    <div>
+                        <span class="task-priority priority-${t.priority.toLowerCase()}">${t.priority}</span>
+                        <span class="task-category category-${(t.category || 'Personal').toLowerCase()}">${t.category || 'Personal'}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="task-actions">
+                <button onclick="openEditModal(${t.id})" class="secondary">✏️ Edit</button>
+                <button onclick="del(${t.id})" class="danger">🗑️ Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateStats(){
+    const total = allTasks.length;
+    const high = allTasks.filter(t => t.priority === 'High').length;
+    const comp = allTasks.filter(t => t.completed).length;
+    
+    // Calculate productivity score (completion percentage)
+    const productivity = total > 0 ? Math.round((comp / total) * 100) : 0;
+    
+    document.getElementById("totalTasks").innerText = total;
+    document.getElementById("highPriority").innerText = high;
+    document.getElementById("completedCount").innerText = comp;
+    document.getElementById("productivityScore").innerText = productivity + "%";
+    
+    // Fetch streak from user profile
+    fetch("http://127.0.0.1:5000/me", {credentials: "include"})
+    .then(res => res.json())
+    .then(d => {
+        if(d.logged_in && d.streak !== undefined){
+            const streakEmoji = d.streak >= 30 ? "💎" : d.streak >= 10 ? "⭐" : d.streak >= 5 ? "🏆" : "🔥";
+            document.getElementById("streakCount").innerText = streakEmoji + " " + d.streak;
+        }
+    })
+    .catch(() => {});
+}
+
+function toggleTask(id){
+    fetch(`http://127.0.0.1:5000/toggle_completed/${id}`,{
+        method:"POST",
+        credentials:"include"
+    }).then(r => r.json())
+    .then(() => {
+        loadTasks();
+        showToast("Task status updated", 'success');
+    })
+    .catch(() => showToast("Error updating task", 'error'));
+}
+
+function openEditModal(id){
+    const task = allTasks.find(t => t.id === id);
+    if(!task) return;
+    
+    currentEditId = id;
+    document.getElementById("editTask").value = task.task;
+    document.getElementById("editPriority").value = task.priority;
+    document.getElementById("editCategory").value = task.category || "Personal";
+    
+    if(task.date && task.time){
+        document.getElementById("editDateTime").value = `${task.date}T${task.time.replace(' ', '')}`;
+    }
+    
+    document.getElementById("editModal").classList.add("active");
+}
+
+function closeEditModal(){
+    document.getElementById("editModal").classList.remove("active");
+    currentEditId = null;
+}
+
+function saveEdit(){
+    if(!currentEditId) return;
+    
+    const taskText = document.getElementById("editTask").value;
+    const dateTime = document.getElementById("editDateTime").value;
+    const priority = document.getElementById("editPriority").value;
+    const category = document.getElementById("editCategory").value;
+    
+    if(!taskText){
+        showToast("Please enter a task title", 'error');
+        return;
+    }
+    
+    let date = "", time = "";
+    if(dateTime){
+        const dt = new Date(dateTime);
+        date = dt.toISOString().split('T')[0];
+        time = dt.toTimeString().split(' ')[0].substring(0, 5);
+    }
+    
+    fetch(`http://127.0.0.1:5000/edit/${currentEditId}`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        credentials:"include",
+        body:JSON.stringify({task: taskText, date, time, priority, category})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            showToast("✏️ Task updated successfully!", 'success');
+            showNotification("Task updated!");
+            closeEditModal();
+            loadTasks();
+        }
+    })
+    .catch(() => showToast("Error saving task", 'error'));
+}
+
+function del(id){
+    if(!confirm("Delete this task?")) return;
+    fetch(`http://127.0.0.1:5000/delete/${id}`,{
+        method:"DELETE",
+        credentials:"include"
+    }).then(() => {
+        showToast("🗑️ Task deleted", 'info');
+        loadTasks();
+    })
+    .catch(() => showToast("Error deleting task", 'error'));
+}
+
+function generateSummary(){
+    const pending = allTasks.filter(t => !t.completed);
+    const high = pending.filter(t => t.priority === 'High');
+    const medium = pending.filter(t => t.priority === 'Medium');
+    
+    let summary = `📊 Today's Summary for ${userName}\n\n`;
+    summary += `Total Tasks: ${allTasks.length}\n`;
+    summary += `Pending: ${pending.length}\n`;
+    summary += `High Priority: ${high.length}\n`;
+    summary += `Medium Priority: ${medium.length}\n\n`;
+    
+    if(high.length > 0){
+        summary += `⚡ High Priority Tasks:\n`;
+        high.slice(0, 3).forEach(t => summary += `  • ${t.task}\n`);
+    }
+    
+    summary += `\n💡 Tip: Focus on high priority tasks first!`;
+    alert(summary);
+}
+
+function openChangePassword(){
+    document.getElementById("changePasswordModal").classList.add("active");
+}
+
+function closeChangePassword(){
+    document.getElementById("changePasswordModal").classList.remove("active");
+}
+
+function saveNewPassword(){
+    const old = document.getElementById("oldPassword").value;
+    const newPwd = document.getElementById("newPassword").value;
+    const confirm = document.getElementById("confirmPassword").value;
+    
+    if(!old || !newPwd || !confirm){
+        showToast("All fields required", 'error');
+        return;
+    }
+    if(newPwd !== confirm){
+        showToast("Passwords don't match", 'error');
+        return;
+    }
+    
+    fetch("http://127.0.0.1:5000/change_password",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        credentials:"include",
+        body:JSON.stringify({old_password: old, new_password: newPwd})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            showToast("🔐 Password changed successfully!", 'success');
+            closeChangePassword();
+            document.getElementById("oldPassword").value = "";
+            document.getElementById("newPassword").value = "";
+            document.getElementById("confirmPassword").value = "";
+        } else {
+            showToast(data.error, 'error');
+        }
+    })
+    .catch(() => showToast("Error changing password", 'error'));
+}
+
+function toggleProfileMenu(){
+    document.getElementById("profileDropdown").classList.toggle("active");
+}
+
+/* ----- Profile Settings ----- */
+function openProfileSettings(){
+    fetch("http://127.0.0.1:5000/me", {
+        credentials: "include"
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.logged_in){
+            document.getElementById("settingsName").value = data.name || "";
+            document.getElementById("settingsEmail").value = data.email || "";
+            const avatarUrl = data.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=16a34a&color=fff`;
+            document.getElementById("settingsProfilePicture").value = data.profile_picture || "";
+            document.getElementById("avatarPreview").src = avatarUrl;
+            document.getElementById("profileSettingsModal").classList.add("active");
+        }
+    })
+    .catch(() => showToast("Error loading profile", 'error'));
+}
+
+function closeProfileSettings(){
+    document.getElementById("profileSettingsModal").classList.remove("active");
+}
+
+function updateAvatarPreview(){
+    const url = document.getElementById("settingsProfilePicture").value.trim();
+    const name = document.getElementById("settingsName").value || userName;
+    const avatarUrl = url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=16a34a&color=fff`;
+    document.getElementById("avatarPreview").src = avatarUrl;
+}
+
+function saveProfileSettings(){
+    const name = document.getElementById("settingsName").value.trim();
+    const profilePicture = document.getElementById("settingsProfilePicture").value.trim();
+    
+    if(!name){
+        showToast("Name cannot be empty", 'error');
+        return;
+    }
+    
+    // Update name
+    fetch("http://127.0.0.1:5000/update_profile", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "include",
+        body: JSON.stringify({name: name})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            // Update profile picture
+            return fetch("http://127.0.0.1:5000/update_profile_picture", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                credentials: "include",
+                body: JSON.stringify({profile_picture: profilePicture})
+            });
+        } else {
+            throw new Error(data.error || "Failed to update profile");
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            showToast("✅ Profile updated successfully!", 'success');
+            closeProfileSettings();
+            userName = name;
+            updateUserInfo(); // Refresh user info in topbar
+        } else {
+            showToast(data.error || "Error updating profile", 'error');
+        }
+    })
+    .catch(err => showToast(err.message || "Error updating profile", 'error'));
+}
+
+function scrollToSection(id){
+    document.getElementById(id).scrollIntoView({behavior: "smooth"});
+    if(document.getElementById("profileDropdown").classList.contains("active")){
+        document.getElementById("profileDropdown").classList.remove("active");
+    }
+}
+
+function showNotification(msg){
+    if("Notification" in window && Notification.permission === "granted"){
+        new Notification("AI Task Manager", {body: msg});
+    }
+}
+
+function logout(){
+    fetch("http://127.0.0.1:5000/logout",{credentials:"include"})
+    .then(()=>window.location="login.html");
+}
+
+if("Notification" in window && Notification.permission === "default"){
+    Notification.requestPermission();
+}
+
+/* ----- analytics ----- */
+function initCharts() {
+    const ctx1 = document.getElementById('priorityChart');
+    const ctx2 = document.getElementById('statusChart');
+    
+    if (!ctx1 || !ctx2) return;
+    
+    const high = allTasks.filter(t => t.priority === 'High').length;
+    const medium = allTasks.filter(t => t.priority === 'Medium').length;
+    const low = allTasks.filter(t => t.priority === 'Low').length;
+    const completed = allTasks.filter(t => t.completed).length;
+    const pending = allTasks.filter(t => !t.completed).length;
+    
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#94a3b8';
+    const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg-tertiary').trim() || '#1e293b';
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#22c55e';
+    
+    if (priorityChart) priorityChart.destroy();
+    if (statusChart) statusChart.destroy();
+    
+    priorityChart = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: ['High Priority', 'Medium Priority', 'Low Priority'],
+            datasets: [{
+                data: [high, medium, low],
+                backgroundColor: ['#ef4444', '#facc15', accentColor],
+                borderColor: bgColor,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: textColor, padding: 15 },
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: 'Tasks by Priority',
+                    color: accentColor,
+                    font: { size: 14, weight: 'bold' }
+                }
+            }
+        }
+    });
+    
+    statusChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: ['Pending', 'Completed'],
+            datasets: [{
+                label: 'Count',
+                data: [pending, completed],
+                backgroundColor: ['#1e40af', accentColor],
+                borderColor: ['#3b82f6', '#16a34a'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Completion Status',
+                    color: accentColor,
+                    font: { size: 14, weight: 'bold' }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor },
+                    grid: { color: bgColor },
+                    beginAtZero: true
+                },
+                y: {
+                    ticks: { color: textColor },
+                    grid: { color: bgColor }
+                }
+            }
+        }
+    });
+}
+
+/* ----- reminders ----- */
+function checkReminders() {
+    const now = new Date();
+    allTasks.forEach(task => {
+        if (task.completed || !task.date || !task.time) return;
+        if (reminderChecked[task.id]) return;
+        
+        const taskDateTime = parseTaskDateTime(task.date, task.time);
+        if (!taskDateTime) return;
+        
+        const timeDiff = taskDateTime.getTime() - now.getTime();
+        const minutesUntil = timeDiff / (1000 * 60);
+        
+        if (minutesUntil > 0 && minutesUntil <= 15 && minutesUntil > 0) {
+            showReminder(task);
+            reminderChecked[task.id] = true;
+        }
+    });
+}
+
+function parseTaskDateTime(date, time) {
+    try {
+        if (date === 'today') {
+            const today = new Date().toISOString().split('T')[0];
+            date = today;
+        } else if (date === 'tomorrow') {
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            date = tomorrow;
+        }
+        
+        const timeStr = (time || '').replace(/\s/g, '').toUpperCase();
+        let [hours, minutes] = timeStr.split(':').map(x => parseInt(x) || 0);
+        
+        if (timeStr.includes('PM') && hours !== 12) hours += 12;
+        if (timeStr.includes('AM') && hours === 12) hours = 0;
+        
+        const dt = new Date(`${date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
+        return isNaN(dt.getTime()) ? null : dt;
+    } catch {
+        return null;
+    }
+}
+
+function showReminder(task) {
+    const reminderEl = document.getElementById('reminderAlert');
+    document.getElementById('reminderText').innerText = `"${task.task}" is due at ${task.time}`;
+    reminderEl.style.display = 'block';
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Task Due Soon!', {
+            body: `${task.task} @ ${task.time}`,
+            tag: 'task-reminder'
+        });
+    }
+}
+
+function closeReminder() {
+    document.getElementById('reminderAlert').style.display = 'none';
+}
+
+loadTasks();
+setInterval(checkReminders, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sign Up</title>
+<style>
+body {
+    background:#0f172a;
+    color:white;
+    font-family:Arial;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.box {
+    background:#020617;
+    padding:30px;
+    border-radius:10px;
+    width:320px;
+}
+input {
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+    background:#020617;
+    border:1px solid #1e293b;
+    color:white;
+}
+button {
+    width:100%;
+    padding:10px;
+    background:#22c55e;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+a { color:#22c55e; }
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2>Create Account</h2>
+
+<input id="name" type="text" placeholder="Full Name">
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+
+<button onclick="signup()">Sign Up</button>
+
+<p>Already have an account? <a href="login.html">Login</a></p>
+<p id="msg"></p>
+</div>
+
+<script>
+function signup(){
+    const nameVal = document.getElementById("name").value.trim();
+    const emailVal = document.getElementById("email").value.trim();
+    const passVal = document.getElementById("password").value;
+
+    if(!nameVal || !emailVal || !passVal){
+        document.getElementById("msg").innerText = "All fields are required";
+        return;
+    }
+
+    fetch("http://127.0.0.1:5000/signup",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        credentials:"include",
+        body:JSON.stringify({
+            name: nameVal,
+            email: emailVal,
+            password: passVal
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            window.location.href = "login.html";
+        } else {
+            document.getElementById("msg").innerText = data.error;
+        }
+    })
+    .catch(() => {
+        document.getElementById("msg").innerText = "Server error";
+    });
+}
+</script>
+
+</body>
+</html>
