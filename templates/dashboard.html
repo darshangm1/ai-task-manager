@@ -757,7 +757,7 @@ function removeToast(toast) {
 
 /* ----- check login ----- */
 function updateUserInfo() {
-    fetch("http://127.0.0.1:5000/me", {credentials: "include"})
+    fetch("/me", {credentials: "include"})
     .then(res => res.json())
     .then(d => {
         if(!d.logged_in){
@@ -813,7 +813,7 @@ function send(){
         showToast("Please enter or speak a task", 'error');
         return;
     }
-    fetch("http://127.0.0.1:5000/ai",{
+    fetch("/ai",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         credentials:"include",
@@ -835,7 +835,7 @@ function send(){
 
 /* ----- load tasks ----- */
 function loadTasks(){
-    fetch("http://127.0.0.1:5000/tasks",{credentials:"include"})
+    fetch("/tasks",{credentials:"include"})
     .then(r=>r.json())
     .then(data=>{
         allTasks = data;
@@ -949,7 +949,7 @@ function updateStats(){
     document.getElementById("productivityScore").innerText = productivity + "%";
     
     // Fetch streak from user profile
-    fetch("http://127.0.0.1:5000/me", {credentials: "include"})
+    fetch("/me", {credentials: "include"})
     .then(res => res.json())
     .then(d => {
         if(d.logged_in && d.streak !== undefined){
@@ -961,7 +961,7 @@ function updateStats(){
 }
 
 function toggleTask(id){
-    fetch(`http://127.0.0.1:5000/toggle_completed/${id}`,{
+    fetch(`/toggle_completed/${id}`,{
         method:"POST",
         credentials:"include"
     }).then(r => r.json())
@@ -1013,7 +1013,7 @@ function saveEdit(){
         time = dt.toTimeString().split(' ')[0].substring(0, 5);
     }
     
-    fetch(`http://127.0.0.1:5000/edit/${currentEditId}`,{
+    fetch(`/edit/${currentEditId}`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         credentials:"include",
@@ -1033,7 +1033,7 @@ function saveEdit(){
 
 function del(id){
     if(!confirm("Delete this task?")) return;
-    fetch(`http://127.0.0.1:5000/delete/${id}`,{
+    fetch(`/delete/${id}`,{
         method:"DELETE",
         credentials:"include"
     }).then(() => {
@@ -1085,7 +1085,7 @@ function saveNewPassword(){
         return;
     }
     
-    fetch("http://127.0.0.1:5000/change_password",{
+    fetch("/change_password",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         credentials:"include",
@@ -1112,7 +1112,7 @@ function toggleProfileMenu(){
 
 /* ----- Profile Settings ----- */
 function openProfileSettings(){
-    fetch("http://127.0.0.1:5000/me", {
+    fetch("/me", {
         credentials: "include"
     })
     .then(r => r.json())
@@ -1150,7 +1150,7 @@ function saveProfileSettings(){
     }
     
     // Update name
-    fetch("http://127.0.0.1:5000/update_profile", {
+    fetch("/update_profile", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         credentials: "include",
@@ -1160,7 +1160,7 @@ function saveProfileSettings(){
     .then(data => {
         if(data.success){
             // Update profile picture
-            return fetch("http://127.0.0.1:5000/update_profile_picture", {
+            return fetch("/update_profile_picture", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 credentials: "include",
@@ -1198,7 +1198,7 @@ function showNotification(msg){
 }
 
 function logout(){
-    fetch("http://127.0.0.1:5000/logout",{credentials:"include"})
+    fetch("/logout",{credentials:"include"})
     .then(()=>window.location="login.html");
 }
 
